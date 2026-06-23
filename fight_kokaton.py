@@ -9,6 +9,7 @@ import math
 WIDTH = 1100  # ゲームウィンドウの幅
 HEIGHT = 650  # ゲームウィンドウの高さ
 NUM_OF_BOMBS = 5  # 爆弾の数
+EXPLOSION_RADIUS = 100
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -181,6 +182,7 @@ class Explosion:
         if self.life > 0:
             screen.blit(self.imgs[self.life % len(self.imgs)], self.rct)
 
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -214,16 +216,38 @@ def main():
 
         beams = [b for b in beams if b is not None]
         beams = [b for b in beams if b.rct.left < WIDTH]
+
+        EXPLOSION_RADIUS = 100
+
         for beam in beams[:]:
             for i, bomb in enumerate(bombs):
                 if bomb is not None and beam.rct.colliderect(bomb.rct):
+
+                    center = bomb.rct.center
+
                     beams.remove(beam)
-                    explosions.append(Explosion(bomb.rct.center))
+                    explosions.append(Explosion(center))
                     bombs[i] = None
                     score.score += 1
-                    bird.change_img(6, screen)
-                    break
 
+            # 爆風判定
+                    for j, other in enumerate(bombs):
+                        if other is None:
+                            continue
+
+                        dx = other.rct.centerx - center[0]
+                        dy = other.rct.centery - center[1]
+                        dist = math.hypot(dx, dy)
+
+                        if dist < EXPLOSION_RADIUS:
+                            explosions.append(
+                                Explosion(other.rct.center)
+                            )
+                            bombs[j] = None
+                            score.score += 1
+
+            bird.change_img(6, screen)
+            break
         bombs = [bomb for bomb in bombs if bomb is not None]
         explosions = [e for e in explosions if e.life > 0]
 
